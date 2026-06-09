@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Molecule Editor & InChIKey Generator</title>
+    
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/kekule/dist/themes/default/kekule.css" />
+    <script src="https://cdn.jsdelivr.net/npm/kekule/dist/kekule.min.js?modules=chemWidget,algorithm,io"></script>
+
+    <script src="https://unpkg.com/@rdkit/rdkit/Dist/RDKit_minimal.js"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        #composer {
+            width: 100%;
+            height: 480px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        .btn-container {
+            margin: 15px 0;
+            text-align: center;
+        }
+        .calc-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .calc-btn:hover {
+            background-color: #218838;
+        }
+        .calc-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .output-panel {
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .key-display {
+            font-family: monospace;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 1.1em;
+            word-break: break-all;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>2D Molecule Editor & InChIKey Generator</h2>
+    <p>Draw your chemical structure below, then click the button to generate identifiers.</p>
+    
+    <div id="composer" data-widget="Kekule.Editor.Composer"></div>
+
+    <div class="btn-container">
+        <button id="generate-btn" class="calc-btn" disabled>Loading Core Engines...</button>
+    </div>
+
+    <div class="output-panel">
+        <h3>Generated Identifiers:</h3>
+        <p><strong>InChIKey:</strong></p>
+        <div id="inchikey-output" class="key-display">Ready. Draw a structure and click the button.</div>
+        
+        <p><strong>SMILES (Reference):</strong></p>
+        <div id="smiles-output" class="key-display">-</div>
+    </div>
+</div>
+
+<script>
+    let rdkitModule = null;
+    let composerApp = null;
+
+    const generateBtn = document.getElementById('generate-btn');
+    const inchikeyOutput = document.getElementById('inchikey-output');
+    const smilesOutput = document.getElementById('smiles-output');
+
+    // 1. Initialize RDKit Wasm engine
+    window.initRDKitModule().then(function(instance) {
+        rdkitModule = instance;
+        checkInitializationComplete();
+    }).catch(err => {
+        inchikeyOutput.innerText = "Fatal Error: Unable to load RDKit WebAssembly core.";
+        console.error(err);
+    });
+
+    // 2. Wait for Kekule structural UI components to build
+    Kekule.X.domReady(() => {
+        composerApp = Kekule.Widget.getWidgetById('composer');
+        checkInitializationComplete();
+    });
+
+    function checkInitializationComplete() {
+        if (rdkitModule && composerApp) {
+            generateBtn.innerText = "Generate InChIKey 🚀";
+            generateBtn.disabled = false;
+            
+            // Listen for user click action
+            generateBtn.addEventListener('click', processMoleculeAndGenerateKey);
+        }
+    }
+
+    function processMoleculeAndGenerateKey() {
+        if (!rdkitModule || !composerApp) return;
+
+        // Fetch user structural drawing object from the canvas
+        const chemObj = composerApp.getChemObj();
+        
+        if (!chemObj || chemObj.isEmpty()) {
+            inchikeyOutput.innerText = "Error: The drawing board is empty!";
+            smilesOutput.innerText = "-";
+            return;
+        }
+
+        try {
+            // FIX: Use explicit string literal 'mol' format to output comprehensive connection coordinates
+            const molfileData = Kekule.IO.saveFormatData(chemObj, 'mol');
+            
+            if (!molfileData || molfileData.trim() === "") {
+                inchikeyOutput.innerText = "Data Generation Error: Failed to build structural table.";
+                return; 
+            }
+
+            // Feed structural matrix directly into RDKit's parser
+            const rdkitMol = rdkitModule.get_mol(molfileData);
+            
+            if (rdkitMol) {
+                // Read Canonical SMILES out of RDKit
+                const canonicalSmiles = rdkitMol.get_smiles();
+                smilesOutput.innerText = canonicalSmiles;
+
+                // Read standard IUPAC InChI
+                const inchi = rdkitMol.get_inchi();
+                if (inchi) {
+                    // Turn InChI string directly into a cryptographic hashing string (InChIKey)
+                    const inchikey = rdkitModule.get_inchikey_for_inchi(inchi);
+                    inchikeyOutput.innerText = inchikey;
+                } else {
+                    inchikeyOutput.innerText = "Error: RDKit could not compute basic InChI coordinates.";
+                }
+                
+                // Clear active WebAssembly context memory heap manually
+                rdkitMol.delete();
+            } else {
+                inchikeyOutput.innerText = "Chemistry Validation Error: Check for unclosed structural loops or dangling bonds.";
+            }
+        } catch (error) {
+            console.error(error);
+            inchikeyOutput.innerText = "Critical Parser Exception occurred on compilation step.";
+        }
+    }
+</script>
+
+</body>
+</html>
