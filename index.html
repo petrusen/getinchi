@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Molecule Editor & InChIKey Generator</title>
+    <title>Get InChIKey and SMILES from 2D Molecule</title>
     
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/kekule/dist/themes/default/kekule.css" />
     <script src="https://cdn.jsdelivr.net/npm/kekule/dist/kekule.min.js?modules=chemWidget,algorithm,io"></script>
@@ -65,13 +65,23 @@
             word-break: break-all;
             min-height: 20px;
         }
+        .info-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .info-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>2D Molecule Editor & InChIKey Generator</h2>
-    <p>Draw your chemical structure below, then click the button to generate identifiers.</p>
+    <h2>Get InChIKey and SMILES from 2D Molecule</h2>
+    
+    <p>
+        Draw your chemical structure below, then click the button to generate identifiers. The application is static and served globally via GitHub Pages. If you want to know more about the repository, please check out the <a class="info-link" href="https://github.com/petrusen/getinchi/blob/main/README.md">README.md</a>.
+    </p>
     
     <div id="composer" data-widget="Kekule.Editor.Composer"></div>
 
@@ -87,6 +97,11 @@
         <p><strong>SMILES (Reference):</strong></p>
         <div id="smiles-output" class="key-display">-</div>
     </div>
+    <hr style="border: 0; border-top: 1px solid #ddd; margin-top: 40px; margin-bottom: 20px;">
+    <footer style="text-align: center; color: #666; font-size: 0.9em; padding-bottom: 20px;">
+        In case of questions or issues, you can contact me at 
+        <a class="info-link" href="mailto:enric.petrus@eawag.ch">enric.petrus@eawag.ch</a>.
+    </footer>
 </div>
 
 <script>
@@ -117,7 +132,6 @@
             generateBtn.innerText = "Generate InChIKey 🚀";
             generateBtn.disabled = false;
             
-            // Listen for user click action
             generateBtn.addEventListener('click', processMoleculeAndGenerateKey);
         }
     }
@@ -125,7 +139,6 @@
     function processMoleculeAndGenerateKey() {
         if (!rdkitModule || !composerApp) return;
 
-        // Fetch user structural drawing object from the canvas
         const chemObj = composerApp.getChemObj();
         
         if (!chemObj || chemObj.isEmpty()) {
@@ -135,7 +148,6 @@
         }
 
         try {
-            // FIX: Use explicit string literal 'mol' format to output comprehensive connection coordinates
             const molfileData = Kekule.IO.saveFormatData(chemObj, 'mol');
             
             if (!molfileData || molfileData.trim() === "") {
@@ -143,25 +155,20 @@
                 return; 
             }
 
-            // Feed structural matrix directly into RDKit's parser
             const rdkitMol = rdkitModule.get_mol(molfileData);
             
             if (rdkitMol) {
-                // Read Canonical SMILES out of RDKit
                 const canonicalSmiles = rdkitMol.get_smiles();
                 smilesOutput.innerText = canonicalSmiles;
 
-                // Read standard IUPAC InChI
                 const inchi = rdkitMol.get_inchi();
                 if (inchi) {
-                    // Turn InChI string directly into a cryptographic hashing string (InChIKey)
                     const inchikey = rdkitModule.get_inchikey_for_inchi(inchi);
                     inchikeyOutput.innerText = inchikey;
                 } else {
                     inchikeyOutput.innerText = "Error: RDKit could not compute basic InChI coordinates.";
                 }
                 
-                // Clear active WebAssembly context memory heap manually
                 rdkitMol.delete();
             } else {
                 inchikeyOutput.innerText = "Chemistry Validation Error: Check for unclosed structural loops or dangling bonds.";
