@@ -3,7 +3,7 @@
 A lightweight, purely client-side web application that allows users to seamlessly convert between 2D chemical structures and molecular identifiers (**SMILES** and **InChIKey**).
 
 ## 🚀 Live Demo
-[https://petrusen/getinchi/]
+[https://petrusen.github.io/getinchi/]
 
 ## 🛠️ How it Works
 This repository hosts a single self-contained web page (`index.html`). Because it runs completely in the browser without requiring a backend server, it can be deployed instantly to GitHub Pages.
