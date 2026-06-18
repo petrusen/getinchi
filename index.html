@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get InChIKey and SMILES from 2D Molecule</title>
+    <title>2D structure ⇄ SMILES/InChIKey</title>
     
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/kekule/dist/themes/default/kekule.css" />
     <script src="https://cdn.jsdelivr.net/npm/kekule/dist/kekule.min.js?modules=chemWidget,algorithm,io"></script>
@@ -20,6 +20,41 @@
             max-width: 1000px;
             margin: 0 auto;
         }
+        .page-title {
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 25px;
+        }
+        
+        /* Streamlined Info Boxes */
+        .info-box {
+            padding: 12px 15px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        .instructions-box {
+            background-color: #f3f4f6; /* Light gray */
+            border-left: 4px solid #9ca3af;
+            color: #374151;
+            cursor: pointer;
+        }
+        .instructions-box summary {
+            font-weight: bold;
+            outline: none;
+            user-select: none;
+        }
+        .instructions-box ul {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+        }
+        .privacy-note {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+        }
+
         #composer {
             width: 100%;
             height: 480px;
@@ -27,31 +62,65 @@
             border-radius: 4px;
             background-color: #fff;
         }
+        /* Adjusted margins to make buttons equidistant from canvas and output panel */
         .btn-container {
-            margin: 15px 0;
-            text-align: center;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 30px;
+            justify-content: center;
         }
         .calc-btn {
-            background-color: #28a745;
             color: white;
             border: none;
-            padding: 14px 40px;
+            padding: 14px 25px;
             font-size: 1.1em;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
-            transition: background 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            flex: 1;
+            max-width: 320px;
         }
-        .calc-btn:hover {
-            background-color: #218838;
+        .calc-btn:active {
+            transform: scale(0.98);
+        }
+        /* Vibrant Purple Theme */
+        .btn-2d-smiles {
+            background-color: #7c3aed;
+        }
+        .btn-2d-smiles:hover {
+            background-color: #6d28d9;
+        }
+        /* Vibrant Orange Theme */
+        .btn-smiles-2d {
+            background-color: #ea580c;
+        }
+        .btn-smiles-2d:hover {
+            background-color: #c2410c;
         }
         .calc-btn:disabled {
-            background-color: #cccccc;
+            background-color: #cccccc !important;
             cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none;
+        }
+        .status-message {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.05em;
+            min-height: 24px;
+            margin-bottom: 0px; /* Let container gaps handle spacing natively */
+        }
+        .status-success {
+            color: #16a34a;
+        }
+        .status-error {
+            color: #dc2626;
         }
         .output-panel {
-            padding: 15px;
+            padding: 5px 15px 15px 15px; 
             background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -65,6 +134,13 @@
             word-break: break-all;
             min-height: 20px;
         }
+        textarea.key-display {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            resize: vertical;
+            display: block;
+        }
         .info-link {
             color: #007bff;
             text-decoration: none;
@@ -77,25 +153,35 @@
 <body>
 
 <div class="container">
-    <h2>Get InChIKey and SMILES from 2D Molecule</h2>
+    <h2 class="page-title">2D structure ⇄ SMILES/InChIKey</h2>
     
-    <p>
-        Draw your chemical structure below, then click the button to generate identifiers. The application is static and served globally via GitHub Pages. If you want to know more about the repository, please check out the <a class="info-link" href="https://github.com/petrusen/getinchi/blob/main/README.md">README.md</a>.
-    </p>
+    <details class="info-box instructions-box">
+        <summary>📋 Click to view Instructions</summary>
+        <ul>
+            <li><strong style="color: #7c3aed;">2D to SMILES:</strong> Draw your chemical structure on the board below, then click the purple button to generate its canonical SMILES and InChIKey strings.</li>
+            <li><strong style="color: #ea580c;">SMILES to 2D:</strong> Paste or type a valid SMILES string into the text container at the bottom, then click the orange button to automatically generate and render its 2D coordinates on the board.</li>
+        </ul>
+    </details>
+
+    <div class="info-box privacy-note">
+        🔒 <strong>Privacy Note:</strong> Molecular data and input strings provided by users <strong>are not transmitted, tracked, or stored on any server</strong>. This application is entirely static, served globally via GitHub Pages, and all computations run client-side in your web browser. If you want to know more, check out the <a class="info-link" href="https://github.com/petrusen/getinchi/blob/main/README.md" target="_blank">README.md</a>.
+    </div>
     
     <div id="composer" data-widget="Kekule.Editor.Composer"></div>
 
     <div class="btn-container">
-        <button id="generate-btn" class="calc-btn" disabled>Loading Core Engines...</button>
+        <button id="generate-btn" class="calc-btn btn-2d-smiles" disabled>Loading Core Engines...</button>
+        <button id="load-smiles-btn" class="calc-btn btn-smiles-2d" disabled>Loading Core Engines...</button>
     </div>
 
+    <div id="status-msg" class="status-message"></div>
+
     <div class="output-panel">
-        <h3>Generated Identifiers:</h3>
-        <p><strong>InChIKey:</strong></p>
-        <div id="inchikey-output" class="key-display">Ready. Draw a structure and click the button.</div>
+        <p style="margin-top: 10px;"><strong>InChIKey:</strong></p>
+        <div id="inchikey-output" class="key-display">Ready. Draw a structure or input a SMILES string.</div>
         
-        <p><strong>SMILES (Reference):</strong></p>
-        <div id="smiles-output" class="key-display">-</div>
+        <p><strong>SMILES (Reference / Input):</strong></p>
+        <textarea id="smiles-output" class="key-display" rows="2" placeholder="Paste or generate SMILES here..."></textarea>
     </div>
     <hr style="border: 0; border-top: 1px solid #ddd; margin-top: 40px; margin-bottom: 20px;">
     <footer style="text-align: center; color: #666; font-size: 0.9em; padding-bottom: 20px;">
@@ -109,8 +195,15 @@
     let composerApp = null;
 
     const generateBtn = document.getElementById('generate-btn');
+    const loadSmilesBtn = document.getElementById('load-smiles-btn');
     const inchikeyOutput = document.getElementById('inchikey-output');
     const smilesOutput = document.getElementById('smiles-output');
+    const statusMsg = document.getElementById('status-msg');
+
+    function showStatus(text, isSuccess) {
+        statusMsg.innerText = text;
+        statusMsg.className = "status-message " + (isSuccess ? "status-success" : "status-error");
+    }
 
     // 1. Initialize RDKit Wasm engine
     window.initRDKitModule().then(function(instance) {
@@ -118,6 +211,7 @@
         checkInitializationComplete();
     }).catch(err => {
         inchikeyOutput.innerText = "Fatal Error: Unable to load RDKit WebAssembly core.";
+        showStatus("Fatal Error: Unable to load RDKit core.", false);
         console.error(err);
     });
 
@@ -129,13 +223,18 @@
 
     function checkInitializationComplete() {
         if (rdkitModule && composerApp) {
-            generateBtn.innerText = "Generate InChIKey 🚀";
+            generateBtn.innerText = "↓↓ 2D to SMILES ↓↓";
             generateBtn.disabled = false;
             
+            loadSmilesBtn.innerText = "↑↑ SMILES to 2D ↑↑";
+            loadSmilesBtn.disabled = false;
+            
             generateBtn.addEventListener('click', processMoleculeAndGenerateKey);
+            loadSmilesBtn.addEventListener('click', loadSmilesIntoComposer);
         }
     }
 
+    // Action 1: 2D -> SMILES & InChIKey
     function processMoleculeAndGenerateKey() {
         if (!rdkitModule || !composerApp) return;
 
@@ -143,7 +242,8 @@
         
         if (!chemObj || chemObj.isEmpty()) {
             inchikeyOutput.innerText = "Error: The drawing board is empty!";
-            smilesOutput.innerText = "-";
+            smilesOutput.value = "";
+            showStatus("Conversion failed: The drawing board is empty!", false);
             return;
         }
 
@@ -152,6 +252,7 @@
             
             if (!molfileData || molfileData.trim() === "") {
                 inchikeyOutput.innerText = "Data Generation Error: Failed to build structural table.";
+                showStatus("Conversion failed: Structural generation error.", false);
                 return; 
             }
 
@@ -159,23 +260,73 @@
             
             if (rdkitMol) {
                 const canonicalSmiles = rdkitMol.get_smiles();
-                smilesOutput.innerText = canonicalSmiles;
+                smilesOutput.value = canonicalSmiles;
 
                 const inchi = rdkitMol.get_inchi();
                 if (inchi) {
                     const inchikey = rdkitModule.get_inchikey_for_inchi(inchi);
                     inchikeyOutput.innerText = inchikey;
+                    showStatus("Success: 2D structure converted to identifiers!", true);
                 } else {
                     inchikeyOutput.innerText = "Error: RDKit could not compute basic InChI coordinates.";
+                    showStatus("Partial conversion: InChI coordinates generation failed.", false);
                 }
                 
                 rdkitMol.delete();
             } else {
                 inchikeyOutput.innerText = "Chemistry Validation Error: Check for unclosed structural loops or dangling bonds.";
+                showStatus("Conversion failed: Invalid chemical structure detected.", false);
             }
         } catch (error) {
             console.error(error);
             inchikeyOutput.innerText = "Critical Parser Exception occurred on compilation step.";
+            showStatus("Error: A critical parser exception occurred.", false);
+        }
+    }
+
+    // Action 2: SMILES -> 2D
+    function loadSmilesIntoComposer() {
+        if (!rdkitModule || !composerApp) return;
+
+        const inputSmiles = smilesOutput.value.trim();
+
+        if (!inputSmiles) {
+            smilesOutput.value = "Error: SMILES field is empty!";
+            showStatus("Conversion failed: Please enter a SMILES string.", false);
+            return;
+        }
+
+        let rdkitMol = null;
+        try {
+            rdkitMol = rdkitModule.get_mol(inputSmiles);
+            
+            if (rdkitMol) {
+                const molfile = rdkitMol.get_new_coords();
+                const chemObj = Kekule.IO.loadFormatData(molfile, 'mol');
+                
+                if (chemObj) {
+                    composerApp.setChemObj(chemObj);
+                    
+                    const inchi = rdkitMol.get_inchi();
+                    if (inchi) {
+                        inchikeyOutput.innerText = rdkitModule.get_inchikey_for_inchi(inchi);
+                    }
+                    showStatus("Success: SMILES loaded to 2D canvas!", true);
+                } else {
+                    smilesOutput.value = "Error: Kekule failed to render the generated molecular structure.";
+                    showStatus("Conversion failed: Render engine error.", false);
+                }
+                
+                rdkitMol.delete();
+            } else {
+                smilesOutput.value = "Error: Invalid chemical string / unparseable SMILES.";
+                showStatus("Conversion failed: Unparseable or invalid SMILES string.", false);
+            }
+        } catch (error) {
+            console.error(error);
+            smilesOutput.value = "Error: Failed to process SMILES string.";
+            showStatus("Error: A parser exception occurred handling the SMILES code.", false);
+            if (rdkitMol) rdkitMol.delete();
         }
     }
 </script>
